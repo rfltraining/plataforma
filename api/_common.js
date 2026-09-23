@@ -70,7 +70,13 @@ export async function adminRequest(path, options = {}) {
 }
 
 export function privateUrl(signed) {
-  const url = new URL(signed, base);
-  if (url.origin !== new URL(base).origin || !url.pathname.startsWith('/storage/v1/object/sign/')) throw new Error('URL privada inválida');
+  if (!signed || typeof signed !== 'string') throw new Error('URL privada no recibida');
+  const normalized = signed.startsWith('/object/sign/')
+    ? `/storage/v1${signed}`
+    : signed;
+  const url = new URL(normalized, base);
+  if (url.origin !== new URL(base).origin || !url.pathname.startsWith('/storage/v1/object/sign/')) {
+    throw new Error('URL privada inválida');
+  }
   return url.toString();
 }
