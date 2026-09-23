@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Acceso alumnos | RFL Training</title>
+  <style>
+    :root { color-scheme: light; font-family: system-ui, sans-serif; color:#252522; background:#f6f5f2; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; }
+    header { background:#292927; color:#fff; padding:20px max(6vw,20px); letter-spacing:.1em; font-weight:900; }
+    header span, .eyebrow { color:#f27912; }
+    main { max-width:1040px; margin:6vh auto; display:grid; grid-template-columns:1.1fr .9fr; gap:32px; padding:22px; }
+    .intro { padding:26px 8px; }
+    .eyebrow { text-transform:uppercase; font-size:.75rem; letter-spacing:.16em; font-weight:800; }
+    h1 { font-size:clamp(2.8rem,7vw,5.4rem); line-height:.98; letter-spacing:-.06em; margin:22px 0; }
+    h2 { margin:0 0 8px; font-size:1.5rem; }
+    p { color:#686865; line-height:1.65; }
+    .intro p { max-width:460px; font-size:1.1rem; }
+    .card { background:#fff; padding:38px; border:1px solid #e4e2dd; box-shadow:0 20px 50px #29292710; align-self:start; }
+    label { display:block; font-weight:700; margin:22px 0 8px; }
+    input { display:block; width:100%; padding:15px; border:1px solid #d2d1cb; border-radius:4px; font:inherit; }
+    input:focus { outline:2px solid #f27912; outline-offset:1px; }
+    button { cursor:pointer; width:100%; padding:16px; background:#f27912; border:0; font:inherit; font-weight:850; color:#fff; margin-top:23px; }
+    button:hover { background:#ce6103; }
+    button:disabled { opacity:.7; cursor:wait; }
+    .secondary { background:#282826; margin-top:10px; }
+    .secondary:hover { background:#42423e; }
+    #message { min-height:1.6em; color:#9b370a; font-weight:650; }
+    a { color:#a44800; font-weight:700; }
+    #members { display:none; }
+    .program { margin:24px 0; padding:22px; border:1px solid #eee5de; border-left:5px solid #f27912; }
+    .program strong { font-size:1.2rem; }
+    @media(max-width:700px) { main { display:block; margin:2vh auto; } .intro { padding:8px; } .card { margin-top:20px; padding:26px; } }
+  </style>
+</head>
+<body>
+  <header><span>RFL</span> TRAINING <small style="float:right;letter-spacing:0">ZONA DE ALUMNOS</small></header>
+  <main>
+    <div class="intro">
+      <div class="eyebrow">Un espacio para avanzar a tu ritmo</div>
+      <h1>Tu próximo paso comienza acá.</h1>
+      <p>Ingresá con tu cuenta personal para acceder a los entrenamientos que ya tenés habilitados.</p>
+      <p>¿Todavía no tenés acceso? <a href="https://wa.me/5493412257474?text=Hola%20Adri%C3%A1n%2C%20quiero%20consultar%20por%20el%20plan%20de%2060%20d%C3%ADas" target="_blank" rel="noopener noreferrer">Hablá con Adrián por WhatsApp</a>.</p>
+    </div>
+    <section class="card">
+      <div id="signin">
+        <h2>Ingresá a tu cuenta</h2>
+        <p>Si ya compraste el plan, usá el correo con el que te registraron.</p>
+        <form id="form">
+          <label for="email">Correo electrónico</label>
+          <input id="email" name="email" type="email" autocomplete="username" required placeholder="tu@email.com">
+          <label for="password">Contraseña</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" required placeholder="Tu contraseña">
+          <button type="submit" id="submit">Entrar a mis entrenamientos →</button>
+        </form>
+      </div>
+      <div id="members">
+        <div class="eyebrow">Mi espacio</div>
+        <h2>Bienvenido/a a RFL</h2>
+        <div class="program">
+          <strong>RFL FIT 35 · Plan de 60 días</strong>
+          <p>Tu programa para entrenar con una estructura clara, día a día.</p>
+          <button type="button" id="open">Abrir mi plan →</button>
+        </div>
+        <button type="button" class="secondary" id="logout">Cerrar sesión</button>
+      </div>
+      <p id="message" role="status" aria-live="polite"></p>
+    </section>
+  </main>
+  <script>
+    const form = document.querySelector('#form');
+    const message = document.querySelector('#message');
+    function showMembers(yes) { document.querySelector('#signin').style.display = yes ? 'none' : 'block'; document.querySelector('#members').style.display = yes ? 'block' : 'none'; }
+    async function openPlan() {
+      message.textContent = 'Preparando tu entrenamiento...';
+      try {
+        const response = await fetch('/api/plan', { method:'POST', credentials:'same-origin' });
+        const data = await response.json();
+        if (response.status === 401) showMembers(false);
+        if (!response.ok) throw new Error(data.error || 'No se pudo abrir el plan');
+        window.location.assign(data.url);
+      } catch (error) { message.textContent = error.message; }
+    }
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      const button = document.querySelector('#submit');
+      button.disabled = true;
+      message.textContent = '';
+      try {
+        const response = await fetch('/api/login', {
+          method:'POST', headers:{ 'Content-Type':'application/json' }, credentials:'same-origin',
+          body:JSON.stringify({ email:document.querySelector('#email').value, password:document.querySelector('#password').value }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'No se pudo ingresar');
+        document.querySelector('#password').value = '';
+        showMembers(true);
+        message.textContent = 'Ingresaste correctamente. Abrí tu programa para continuar.';
+      } catch(error) { message.textContent = error.message; }
+      finally { button.disabled = false; }
+    });
+    document.querySelector('#open').addEventListener('click', openPlan);
+    document.querySelector('#logout').addEventListener('click', async () => {
+      await fetch('/api/logout', { method:'POST', credentials:'same-origin' });
+      showMembers(false);
+      message.textContent = 'Sesión cerrada.';
+    });
+  </script>
+</body>
+</html>
